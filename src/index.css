@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Lato", sans-serif;
+@theme {
+  --color-blue-primary: #1B3C53;
+  --color-blue-secondary: #234C6A;
+  --color-blue-muted: #456882;
+
+  --color-neutral-light: #E3E3E3;
+  --color-neutral-dark: #1F2933;
+  --color-neutral-bg: #F5F7FA;
+
+  --color-accent-teal: #3BAEA0;
+
+  --color-success: #4CAF8D;
+  --color-warning: #E6A23C;
+  --color-danger: #D9534F;
 }
