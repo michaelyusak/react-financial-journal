@@ -1,6 +1,5 @@
 import Cookies from "js-cookie";
 import {
-  MsgRefreshTokenNotFound,
   MsgUnauthorized,
 } from "../constants/Messages";
 import {
@@ -87,6 +86,13 @@ export async function ValidateAccount(): Promise<IValidatedAccount> {
   const responseData = await response.json();
 
   if (!response.ok) {
+    if (response.status == 401 || response.status == 403) {
+      Cookies.remove(RefreshTokenKey)
+      Cookies.remove(AccessTokenKey)
+
+      throw new Error(MsgUnauthorized)
+    }
+
     throw new Error(responseData.message);
   }
 
@@ -99,7 +105,7 @@ export async function HandleRefreshToken() {
   const refreshToken = Cookies.get(RefreshTokenKey);
 
   if (!refreshToken) {
-    throw new Error(MsgRefreshTokenNotFound);
+    throw new Error(MsgUnauthorized);
   }
 
   const options: RequestInit = {
@@ -125,7 +131,13 @@ export async function HandleRefreshToken() {
   const responseData = await response.json();
 
   if (!response.ok) {
-    throw new Error(MsgUnauthorized + ", " + responseData.message);
+    if (response.status == 401 || response.status == 403) {
+      Logout();
+
+      throw new Error(MsgUnauthorized)
+    }
+
+    throw new Error(responseData.message);
   }
 
   const data: ILoginRes = responseData.data;
@@ -175,8 +187,10 @@ export async function HandleGet<T>(
   if (!response.ok) {
     console.log(responseData.message);
 
-    if (response.status == 401) {
-      throw new Error(MsgUnauthorized);
+    if (response.status == 401 || response.status == 403) {
+      Logout();
+
+      throw new Error(MsgUnauthorized)
     }
 
     throw new Error(`failed to fetch data`);
@@ -207,15 +221,15 @@ export async function HandlePatch(
     return;
   }
 
-  const headers: HeadersInit =
-    typeof body === "string"
-      ? {
-        "Content-Type": "application/json",
-        Authorization: bearerToken,
-      }
-      : {
-        Authorization: bearerToken,
-      };
+  let headers: HeadersInit = {
+    Authorization: bearerToken,
+    "Device-Info": import.meta.env.VITE_DEVICE_INFO,
+    "X-Device-Id": getDeviceId(),
+  }
+
+  if (typeof body === "string") {
+    headers["Content-Type"] = "application/json";
+  }
 
   const options: RequestInit = {
     method: "PATCH",
@@ -234,10 +248,10 @@ export async function HandlePatch(
   const responseData = await response.json();
 
   if (!response.ok) {
-    console.log(responseData.message);
+    if (response.status == 401 || response.status == 403) {
+      Logout();
 
-    if (response.status == 401) {
-      throw new Error(MsgUnauthorized);
+      throw new Error(MsgUnauthorized)
     }
 
     throw new Error(`failed to fetch data`);
@@ -264,15 +278,15 @@ export async function HandlePost<T>(
     bearerToken = `Bearer ${accessToken}`;
   }
 
-  const headers: HeadersInit =
-    typeof body === "string"
-      ? {
-        "Content-Type": "application/json",
-        Authorization: bearerToken,
-      }
-      : {
-        Authorization: bearerToken,
-      };
+  let headers: HeadersInit = {
+    Authorization: bearerToken,
+    "Device-Info": import.meta.env.VITE_DEVICE_INFO,
+    "X-Device-Id": getDeviceId(),
+  }
+
+  if (typeof body === "string") {
+    headers["Content-Type"] = "application/json";
+  }
 
   const options: RequestInit = {
     method: "POST",
@@ -291,14 +305,19 @@ export async function HandlePost<T>(
   const responseData = await response.json();
 
   if (!response.ok) {
-    console.log(responseData.message);
+    if (response.status == 401 || response.status == 403) {
+      Logout()
 
-    if (response.status == 401) {
-      throw new Error(MsgUnauthorized);
+      throw new Error(MsgUnauthorized)
     }
 
     throw new Error(`failed to post data`);
   }
 
   return responseData.data;
+}
+
+export function Logout() {
+  Cookies.remove(RefreshTokenKey)
+  Cookies.remove(AccessTokenKey)
 }

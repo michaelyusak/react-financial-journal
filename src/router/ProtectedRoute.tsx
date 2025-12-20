@@ -36,9 +36,6 @@ const ProtectedRoute = ({ acceptedRoles }: protectedRouteProps) => {
       .catch((error: Error) => {
         addToast(`protectedRoute:failedValidateAccount:${Date.now()}`, error.message, false, true, 7000)
 
-        Cookies.remove(AccessTokenKey);
-        Cookies.remove(RefreshTokenKey);
-
         setIsValid(false);
       });
   }, [acceptedRoles]);
@@ -46,7 +43,7 @@ const ProtectedRoute = ({ acceptedRoles }: protectedRouteProps) => {
   return (
     <>
       {isValid != undefined && (
-        <>{isValid ? <Outlet></Outlet> : <Navigate to={"/"}></Navigate>}</>
+        <>{isValid ? <Outlet></Outlet> : <Navigate to={"/login"}></Navigate>}</>
       )}
     </>
   );

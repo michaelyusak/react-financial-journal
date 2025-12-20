@@ -39,10 +39,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     ) {
         if (toasts.length >= 5) return;
 
-        setToasts((prev) => [
-            ...prev,
-            { id, message, isSuccess, withLoginRedirection },
-        ]);
+        setToasts((prev) => {
+            if (prev.some((t) => t.id === id)) return prev;
+
+            return [
+                ...prev,
+                { id, message, isSuccess, withLoginRedirection },
+            ]
+        });
 
         if (durationMs) {
             setTimeout(() => removeToast(id), durationMs);
