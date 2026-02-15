@@ -1,9 +1,11 @@
-import React, { useRef, useState, type ChangeEvent } from "react";
+import React, { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { IoMdClose } from "react-icons/io";
 import { EmailRegex, NameRegex, PasswordRegex } from "../constants/Regex";
 import type { IInputField } from "../interfaces/InputField";
 import { useToast } from "../contexts/ToastContext";
+import { HandleGet } from "../utils/API";
+import type { IBank } from "../interfaces/Bank";
 
 type InputProps = {
   inputField: IInputField;
@@ -18,7 +20,7 @@ const Input = ({
   isError,
   onChange,
 }: InputProps): React.ReactElement => {
-  const { addToast } = useToast()
+  const { addToast, removeToast } = useToast()
 
   const inputFile = useRef<HTMLInputElement>(null);
 
@@ -193,53 +195,55 @@ const Input = ({
   const [selectedBinary, setSelectedBinary] = useState<number>(
     Number(value) ?? 0
   );
+
+  const [banks, setBanks] = useState<IBank[]>()
+
+  const getBanks = () => {
+    const loadingGetBanksToastKey = `inputComponent:loadingGetBanks:${Date.now()}`
+    addToast(loadingGetBanksToastKey, "Fetching balance ...", undefined, false)
+
+    const url = import.meta.env.VITE_MAIN_BASE_URL + "/v1/bank"
+
+    HandleGet<IBank[]>(url, true)
+      .then((data) => {
+        removeToast(loadingGetBanksToastKey)
+        setBanks(data)
+      })
+      .catch((error) => {
+        removeToast(loadingGetBanksToastKey)
+        addToast(`inputComponent:failedGetBanks:${Date.now()}`, error.message, false, false, 5000)
+      })
+  }
+
+  useEffect(() => {
+    if (inputField.type != "banks" || banks) {
+      return
+    }
+
+    getBanks();
+  }, [])
   return (
     <>
-      {inputField.type == "password" || inputField.type == "confirmPassword" ? (
-        <>
-          <div className="w-full">
-            <div
-              className={`flex items-center justify-between w-full bg-slate-200 border border-[#f6f7fb] outline-0 tracking-[3px] placeholder:text-[#000D44] placeholder:tracking-[0px] text-[#000D44] rounded-[30px] px-5 py-4 ${isError
-                ? "focus-within:border-danger bg-[#fb9c9c]"
-                : "focus-within:border-[#1F5FFF]"
-                } ${inputField.additionalClassName}`}
-            >
-              <input
-                type={showPassword ? "text" : "password"}
-                className={`w-full text-black bg-transparent outline-0 tracking-[3px] placeholder:text-black placeholder:tracking-[0px] ${inputField.additionalClassName}`}
-                placeholder={inputField.placeholder}
-                value={value as string}
-                onChange={(e) => handlePasswordChange(e)}
-              ></input>
-              <button type="button" onClick={() => handleSetShowPassword()}>
-                {showPassword ? (
-                  <FaEye className="h-5"></FaEye>
-                ) : (
-                  <FaEyeSlash className="h-5.5"></FaEyeSlash>
-                )}
-              </button>
-            </div>
-          </div>
-          {inputField.withConfirmPassword && (
+      {/* pasword or confirmPassword */}
+      {
+        (inputField.type == "password" || inputField.type == "confirmPassword") && (
+          <>
             <div className="w-full">
               <div
-                className={`flex items-center justify-between w-full bg-slate-200 border border-[#f6f7fb] outline-none tracking-[3px] placeholder:text-[#000D44] placeholder:tracking-[0px] text-[#000D44] rounded-[30px] px-5 py-4 ${isError
+                className={`flex items-center justify-between w-full bg-slate-200 border border-[#f6f7fb] outline-0 tracking-[3px] placeholder:text-[#000D44] placeholder:tracking-[0px] text-[#000D44] rounded-[30px] px-5 py-4 ${isError
                   ? "focus-within:border-danger bg-[#fb9c9c]"
-                  : "focus-within:border-[#D8DDE1]"
+                  : "focus-within:border-[#1F5FFF]"
                   } ${inputField.additionalClassName}`}
               >
                 <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  className={`w-full text-black bg-transparent focus:outline-0 tracking-[3px] placeholder:text-black placeholder:tracking-[0px] ${inputField.additionalClassName}`}
-                  placeholder={"Confirm Password"}
-                  value={confirmPassword.value}
-                  onChange={(e) => handleConfirmPasswordChange(e)}
+                  type={showPassword ? "text" : "password"}
+                  className={`w-full text-black bg-transparent outline-0 tracking-[3px] placeholder:text-black placeholder:tracking-[0px] ${inputField.additionalClassName}`}
+                  placeholder={inputField.placeholder}
+                  value={value as string}
+                  onChange={(e) => handlePasswordChange(e)}
                 ></input>
-                <button
-                  type="button"
-                  onClick={() => handleSetShowConfirmPassword()}
-                >
-                  {showConfirmPassword ? (
+                <button type="button" onClick={() => handleSetShowPassword()}>
+                  {showPassword ? (
                     <FaEye className="h-5"></FaEye>
                   ) : (
                     <FaEyeSlash className="h-5.5"></FaEyeSlash>
@@ -247,99 +251,170 @@ const Input = ({
                 </button>
               </div>
             </div>
-          )}
-        </>
-      ) : inputField.type == "file" ? (
-        <>
-          {!certificate.name ? (
-            <>
-              <input
-                type="file"
-                className="hidden"
-                key={inputField.name}
-                ref={inputFile}
-                id={`inputfile${inputField.name}`}
-                onChange={(e) => handleFileChange(e)}
-                required={inputField.isRequired}
-              ></input>
-              <label htmlFor={`inputfile${inputField.name}`}>
+            {inputField.withConfirmPassword && (
+              <div className="w-full">
                 <div
-                  className={`w-[50%] hover:translate-x-px bg-slate-200 border outline-0 text-[#000D44] rounded-[30px] px-5 py-4 cursor-pointer ${isError
-                    ? "focus:border-danger bg-[#fb9c9c]"
-                    : "focus:border-success"
+                  className={`flex items-center justify-between w-full bg-slate-200 border border-[#f6f7fb] outline-none tracking-[3px] placeholder:text-[#000D44] placeholder:tracking-[0px] text-[#000D44] rounded-[30px] px-5 py-4 ${isError
+                    ? "focus-within:border-danger bg-[#fb9c9c]"
+                    : "focus-within:border-[#D8DDE1]"
                     } ${inputField.additionalClassName}`}
                 >
-                  {inputField.placeholder}
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    className={`w-full text-black bg-transparent focus:outline-0 tracking-[3px] placeholder:text-black placeholder:tracking-[0px] ${inputField.additionalClassName}`}
+                    placeholder={"Confirm Password"}
+                    value={confirmPassword.value}
+                    onChange={(e) => handleConfirmPasswordChange(e)}
+                  ></input>
+                  <button
+                    type="button"
+                    onClick={() => handleSetShowConfirmPassword()}
+                  >
+                    {showConfirmPassword ? (
+                      <FaEye className="h-5"></FaEye>
+                    ) : (
+                      <FaEyeSlash className="h-5.5"></FaEyeSlash>
+                    )}
+                  </button>
                 </div>
-              </label>
-            </>
-          ) : (
-            <>
-              <div className="flex gap-2.5 py-4 px-5 bg-slate-200 border outline-0 border-success rounded-[30px] justify-between items-center">
-                <p className="h-full w-[80%] text-left truncate">
-                  {certificate.name}
-                </p>
-                <p className="w-[20%] text-right">
-                  {(certificate.size / 1000).toFixed(2)}
-                  <b className="font-semibold text-[#1F5FFF]">kB</b>
-                </p>
-                <button
-                  onClick={() => handleRemoveCertificate()}
-                  className="px-2.5"
-                >
-                  <IoMdClose></IoMdClose>
-                </button>
               </div>
-            </>
-          )}
-        </>
-      ) : inputField.type == "binary" ? (
-        <div className={`flex items-center w-full outline-none text-[#000D44]`}>
-          {inputField.options?.map((opt, i) => (
-            <div
-              key={i}
-              className={`w-full ${selectedBinary === opt.value ? "bg-[#C2D4FF]" : "bg-[#f6f7fb]"
-                } px-5 py-4 ${i === 0 ? "rounded-l-[30px]" : "rounded-r-[30px]"
-                } cursor-pointer border border-[#f6f7fb] text-center`}
-              onClick={() => {
-                onChange(String(opt.value), "");
-                setSelectedBinary(opt.value);
-              }}
+            )}
+          </>
+        )
+      }
+
+      {/* file */}
+      {
+        inputField.type == "file" && (
+          <>
+            {!certificate.name ? (
+              <>
+                <input
+                  type="file"
+                  className="hidden"
+                  key={inputField.name}
+                  ref={inputFile}
+                  id={`inputfile${inputField.name}`}
+                  onChange={(e) => handleFileChange(e)}
+                  required={inputField.isRequired}
+                ></input>
+                <label htmlFor={`inputfile${inputField.name}`}>
+                  <div
+                    className={`w-[50%] hover:translate-x-px bg-slate-200 border outline-0 text-[#000D44] rounded-[30px] px-5 py-4 cursor-pointer ${isError
+                      ? "focus:border-danger bg-[#fb9c9c]"
+                      : "focus:border-success"
+                      } ${inputField.additionalClassName}`}
+                  >
+                    {inputField.placeholder}
+                  </div>
+                </label>
+              </>
+            ) : (
+              <>
+                <div className="flex gap-2.5 py-4 px-5 bg-slate-200 border outline-0 border-success rounded-[30px] justify-between items-center">
+                  <p className="h-full w-[80%] text-left truncate">
+                    {certificate.name}
+                  </p>
+                  <p className="w-[20%] text-right">
+                    {(certificate.size / 1000).toFixed(2)}
+                    <b className="font-semibold text-[#1F5FFF]">kB</b>
+                  </p>
+                  <button
+                    onClick={() => handleRemoveCertificate()}
+                    className="px-2.5"
+                  >
+                    <IoMdClose></IoMdClose>
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )
+      }
+
+      {/* binary */}
+      {
+        inputField.type == "binary" && (
+          <div className={`flex items-center w-full outline-none text-[#000D44]`}>
+            {inputField.options?.map((opt, i) => (
+              <div
+                key={i}
+                className={`w-full ${selectedBinary === opt.value ? "bg-[#C2D4FF]" : "bg-[#f6f7fb]"
+                  } px-5 py-4 ${i === 0 ? "rounded-l-[30px]" : "rounded-r-[30px]"
+                  } cursor-pointer border border-[#f6f7fb] text-center`}
+                onClick={() => {
+                  onChange(String(opt.value), "");
+                  setSelectedBinary(opt.value);
+                }}
+              >
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        )
+      }
+
+      {/* email or name or text */}
+      {
+        (inputField.type == "name" || inputField.type == "email" || inputField.type == "text") && (
+          <div className="flex flex-col w-full">
+            <input
+              className={`w-full bg-slate-200 border border-[#f6f7fb] outline-0 tracking-[3px] placeholder:text-[#000D44] placeholder:tracking-[0px] text-[#000D44] rounded-[30px] px-5 py-4 ${inputField.readOnly
+                ? "text-[#808183] placeholder:text-[#808183] focus:border-[#f6f7fb]"
+                : ""
+                } ${isError
+                  ? "focus:border-danger bg-[#fb9c9c]"
+                  : "focus:border-success"
+                } ${inputField.additionalClassName}`}
+              type={
+                inputField.type == "email" || inputField.type == "name"
+                  ? "text"
+                  : inputField.type
+              }
+              placeholder={inputField.placeholder}
+              required={inputField.isRequired}
+              value={value as string | number}
+              onChange={(e) =>
+                inputField.type == "email"
+                  ? handleEmailChange(e)
+                  : inputField.type == "name"
+                    ? handleNameChange(e)
+                    : handleInputChange(e)
+              }
+              onBlur={(e) => inputField.type == "name" && handleNameChange(e)}
+              readOnly={inputField.readOnly}
+            ></input>
+          </div>
+        )
+      }
+
+      {/* Banks */}
+      {
+        inputField.type === "banks" && (
+          <div className="flex flex-col gap-1">
+            <label htmlFor="bank" className="text-sm font-medium">
+              Bank
+            </label>
+
+            <select
+              id="bank"
+              name="bank"
+              className="border rounded px-2 py-1"
+              defaultValue=""
             >
-              {opt.label}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col w-full">
-          <input
-            className={`w-full bg-slate-200 border border-[#f6f7fb] outline-0 tracking-[3px] placeholder:text-[#000D44] placeholder:tracking-[0px] text-[#000D44] rounded-[30px] px-5 py-4 ${inputField.readOnly
-              ? "text-[#808183] placeholder:text-[#808183] focus:border-[#f6f7fb]"
-              : ""
-              } ${isError
-                ? "focus:border-danger bg-[#fb9c9c]"
-                : "focus:border-success"
-              } ${inputField.additionalClassName}`}
-            type={
-              inputField.type == "email" || inputField.type == "name"
-                ? "text"
-                : inputField.type
-            }
-            placeholder={inputField.placeholder}
-            required={inputField.isRequired}
-            value={value as string | number}
-            onChange={(e) =>
-              inputField.type == "email"
-                ? handleEmailChange(e)
-                : inputField.type == "name"
-                  ? handleNameChange(e)
-                  : handleInputChange(e)
-            }
-            onBlur={(e) => inputField.type == "name" && handleNameChange(e)}
-            readOnly={inputField.readOnly}
-          ></input>
-        </div>
-      )}
+              <option value="" disabled={inputField.isRequired}>
+                Select a bank
+              </option>
+
+              {banks?.map((bank) => (
+                <option key={bank.id} value={bank.id}>
+                  {bank.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )
+      }
     </>
   );
 };

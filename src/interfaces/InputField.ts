@@ -8,7 +8,8 @@ export interface IInputField {
     | "name"
     | "picture"
     | "date"
-    | "binary";
+    | "binary"
+    | "banks";
   name: string;
   placeholder?: string;
   isRequired: boolean;

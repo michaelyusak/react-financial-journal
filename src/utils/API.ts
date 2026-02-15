@@ -1,6 +1,6 @@
 import Cookies from "js-cookie";
 import {
-  MsgRefreshTokenNotFound,
+  MsgInternalError,
   MsgUnauthorized,
 } from "../constants/Messages";
 import {
@@ -87,6 +87,13 @@ export async function ValidateAccount(): Promise<IValidatedAccount> {
   const responseData = await response.json();
 
   if (!response.ok) {
+    if (response.status == 401 || response.status == 403) {
+      Cookies.remove(RefreshTokenKey)
+      Cookies.remove(AccessTokenKey)
+
+      throw new Error(MsgUnauthorized)
+    }
+
     throw new Error(responseData.message);
   }
 
@@ -99,7 +106,7 @@ export async function HandleRefreshToken() {
   const refreshToken = Cookies.get(RefreshTokenKey);
 
   if (!refreshToken) {
-    throw new Error(MsgRefreshTokenNotFound);
+    throw new Error(MsgUnauthorized);
   }
 
   const options: RequestInit = {
@@ -125,7 +132,13 @@ export async function HandleRefreshToken() {
   const responseData = await response.json();
 
   if (!response.ok) {
-    throw new Error(MsgUnauthorized + ", " + responseData.message);
+    if (response.status == 401 || response.status == 403) {
+      RemoveAuthCookies();
+
+      throw new Error(MsgUnauthorized)
+    }
+
+    throw new Error(responseData.message);
   }
 
   const data: ILoginRes = responseData.data;
@@ -175,8 +188,10 @@ export async function HandleGet<T>(
   if (!response.ok) {
     console.log(responseData.message);
 
-    if (response.status == 401) {
-      throw new Error(MsgUnauthorized);
+    if (response.status == 401 || response.status == 403) {
+      RemoveAuthCookies();
+
+      throw new Error(MsgUnauthorized)
     }
 
     throw new Error(`failed to fetch data`);
@@ -207,15 +222,15 @@ export async function HandlePatch(
     return;
   }
 
-  const headers: HeadersInit =
-    typeof body === "string"
-      ? {
-        "Content-Type": "application/json",
-        Authorization: bearerToken,
-      }
-      : {
-        Authorization: bearerToken,
-      };
+  let headers: HeadersInit = {
+    Authorization: bearerToken,
+    "Device-Info": import.meta.env.VITE_DEVICE_INFO,
+    "X-Device-Id": getDeviceId(),
+  }
+
+  if (typeof body === "string") {
+    headers["Content-Type"] = "application/json";
+  }
 
   const options: RequestInit = {
     method: "PATCH",
@@ -234,10 +249,10 @@ export async function HandlePatch(
   const responseData = await response.json();
 
   if (!response.ok) {
-    console.log(responseData.message);
+    if (response.status == 401 || response.status == 403) {
+      RemoveAuthCookies();
 
-    if (response.status == 401) {
-      throw new Error(MsgUnauthorized);
+      throw new Error(MsgUnauthorized)
     }
 
     throw new Error(`failed to fetch data`);
@@ -248,7 +263,7 @@ export async function HandlePatch(
 
 export async function HandlePost<T>(
   url: string,
-  body: string | FormData,
+  body: string | FormData | null,
   withAccessToken?: boolean
 ): Promise<T> {
   let bearerToken = "";
@@ -264,15 +279,15 @@ export async function HandlePost<T>(
     bearerToken = `Bearer ${accessToken}`;
   }
 
-  const headers: HeadersInit =
-    typeof body === "string"
-      ? {
-        "Content-Type": "application/json",
-        Authorization: bearerToken,
-      }
-      : {
-        Authorization: bearerToken,
-      };
+  let headers: HeadersInit = {
+    Authorization: bearerToken,
+    "Device-Info": import.meta.env.VITE_DEVICE_INFO,
+    "X-Device-Id": getDeviceId(),
+  }
+
+  if (typeof body === "string") {
+    headers["Content-Type"] = "application/json";
+  }
 
   const options: RequestInit = {
     method: "POST",
@@ -291,13 +306,144 @@ export async function HandlePost<T>(
   const responseData = await response.json();
 
   if (!response.ok) {
-    console.log(responseData.message);
+    if (response.status == 401 || response.status == 403) {
+      RemoveAuthCookies()
 
-    if (response.status == 401) {
-      throw new Error(MsgUnauthorized);
+      throw new Error(MsgUnauthorized)
     }
 
-    throw new Error(`failed to post data`);
+    if (response.status >= 500) {
+      throw new Error(MsgInternalError);
+    }
+
+    throw new Error(responseData.message)
+  }
+
+  return responseData.data;
+}
+
+export async function HandleDelete<T>(
+  url: string,
+  body: string | FormData | null,
+  withAccessToken?: boolean
+): Promise<T> {
+  let bearerToken = "";
+  let accessToken = Cookies.get(AccessTokenKey);
+
+  if (withAccessToken) {
+    if (!accessToken) {
+      await HandleRefreshToken();
+
+      accessToken = Cookies.get(AccessTokenKey);
+    }
+
+    bearerToken = `Bearer ${accessToken}`;
+  }
+
+  let headers: HeadersInit = {
+    Authorization: bearerToken,
+    "Device-Info": import.meta.env.VITE_DEVICE_INFO,
+    "X-Device-Id": getDeviceId(),
+  }
+
+  if (typeof body === "string") {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const options: RequestInit = {
+    method: "DELETE",
+    headers: headers,
+    body: body,
+  };
+
+  let response: Response;
+
+  try {
+    response = await fetch(url, options);
+  } catch (error) {
+    throw new Error("server is offline");
+  }
+
+  const responseData = await response.json();
+
+  if (!response.ok) {
+    if (response.status == 401 || response.status == 403) {
+      RemoveAuthCookies()
+
+      throw new Error(MsgUnauthorized)
+    }
+
+    if (response.status >= 500) {
+      throw new Error(MsgInternalError);
+    }
+
+    throw new Error(responseData.message)
+  }
+
+  return responseData.data;
+}
+
+export function RemoveAuthCookies() {
+  Cookies.remove(RefreshTokenKey)
+  Cookies.remove(AccessTokenKey)
+}
+
+export async function HandlePut<T>(
+  url: string,
+  body: string | FormData | null,
+  withAccessToken?: boolean
+): Promise<T> {
+  let bearerToken = "";
+  let accessToken = Cookies.get(AccessTokenKey);
+
+  if (withAccessToken) {
+    if (!accessToken) {
+      await HandleRefreshToken();
+
+      accessToken = Cookies.get(AccessTokenKey);
+    }
+
+    bearerToken = `Bearer ${accessToken}`;
+  }
+
+  let headers: HeadersInit = {
+    Authorization: bearerToken,
+    "Device-Info": import.meta.env.VITE_DEVICE_INFO,
+    "X-Device-Id": getDeviceId(),
+  }
+
+  if (typeof body === "string") {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const options: RequestInit = {
+    method: "PUT",
+    headers: headers,
+    body: body,
+  };
+
+  let response: Response;
+
+  try {
+    response = await fetch(url, options);
+  } catch (error) {
+    throw new Error("server is offline");
+  }
+
+  const responseData = await response.json();
+
+  if (!response.ok) {
+    if (response.status == 401 || response.status == 403) {
+      RemoveAuthCookies()
+
+      throw new Error(MsgUnauthorized)
+    }
+
+    if (response.status >= 500) {
+      throw new Error(MsgInternalError);
+    }
+
+    throw new Error(responseData.message)
   }
 
   return responseData.data;
