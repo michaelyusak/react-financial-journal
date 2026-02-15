@@ -43,7 +43,9 @@ const ProtectedRoute = ({ acceptedRoles }: protectedRouteProps) => {
   return (
     <>
       {isValid != undefined && (
-        <>{isValid ? <Outlet></Outlet> : <Navigate to={"/login"}></Navigate>}</>
+        <>
+          {isValid ? <Outlet></Outlet> : <Navigate to={"/logout"}></Navigate>}
+        </>
       )}
     </>
   );

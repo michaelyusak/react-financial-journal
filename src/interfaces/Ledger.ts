@@ -1,15 +1,13 @@
 import type { IFinancialAccount } from "./FinancialAccount";
-import type { ILedgerTag } from "./LedgerTag";
+import type { ITransaction } from "./transaction";
 
 export interface ILedger {
     id: number;
-    time: number;
+    transaction: ITransaction;
     financial_account: IFinancialAccount;
-    credit?: number;
-    debit?: number;
+    amount: string;            // decimal.Decimal → string (safe for money)
     note: string;
-    ledger_tag: ILedgerTag;
-    reference_key: string;
-    created_at: number;
-    deleted_at?: number;
+    occurred_at: number;       // unix timestamp
+    created_at: number;        // unix timestamp
+    deleted_at: number | null; // *int64 → nullable
 }

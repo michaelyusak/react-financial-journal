@@ -1,5 +1,5 @@
 // contexts/ToastContext.tsx
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import Toast from "../components/Toast";
 
 export interface ToastData {
@@ -25,6 +25,7 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
     const [toasts, setToasts] = useState<ToastData[]>([]);
+    const [isContainPending, setIsContainPending] = useState<boolean>(false);
 
     function removeToast(id: string) {
         setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -53,8 +54,26 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
+    useEffect(() => {
+        let containPending = false
+
+        toasts.forEach((toast) => {
+            if (toast.isSuccess === undefined) {
+                containPending = true
+            }
+        })
+
+        setIsContainPending(containPending)
+    }, [toasts])
+
     return (
         <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+            {isContainPending && (
+                <div
+                    className="absolute inset-0 bg-black/40"
+                />
+            )}
+
             {children}
             {/* Toast Container */}
             {toasts.length > 0 && (

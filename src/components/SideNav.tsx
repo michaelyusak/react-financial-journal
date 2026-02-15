@@ -1,6 +1,9 @@
 import React from 'react'
+import { FaListUl } from 'react-icons/fa'
 import { FiBookOpen, FiDollarSign } from 'react-icons/fi'
 import { IoWalletOutline } from 'react-icons/io5'
+import { MdOutlineCategory, MdOutlineCompareArrows } from 'react-icons/md'
+import { PiUsersThree } from 'react-icons/pi'
 import { NavLink } from 'react-router-dom'
 
 const SideNav = (): React.ReactElement => {
@@ -31,6 +34,21 @@ const SideNav = (): React.ReactElement => {
                 </NavLink>
 
                 <NavLink
+                    to="/cash-flow"
+                    end
+                    className={({ isActive }) =>
+                        `
+                    ${isActive && "bg-blue-primary"} w-full py-2 px-4 
+                    hover:cursor-pointer flex justify-start gap-3 items-center 
+                    hover:bg-blue-primary hover:shadow-[0px_0px_60px_1px_rgba(0,0,0,0.7)]
+                    `
+                    }
+                >
+                    <MdOutlineCompareArrows></MdOutlineCompareArrows>
+                    Cash Flow
+                </NavLink>
+
+                <NavLink
                     to="/accounts"
                     className={({ isActive }) =>
                         `
@@ -56,6 +74,50 @@ const SideNav = (): React.ReactElement => {
                 >
                     <FiBookOpen></FiBookOpen>
                     Ledgers
+                </NavLink>
+
+                <NavLink
+                    to="/transactions"
+                    className={({ isActive }) =>
+                        `
+                    ${isActive && "bg-blue-primary"} w-full py-2 px-4 
+                    hover:cursor-pointer flex justify-start gap-3 items-center 
+                    hover:bg-blue-primary hover:shadow-[0px_0px_60px_1px_rgba(0,0,0,0.7)]
+                    `
+                    }
+                >
+                    <FaListUl></FaListUl>
+                    Transactions
+                </NavLink>
+
+                <NavLink
+                    to="/participant"
+                    end
+                    className={({ isActive }) =>
+                        `
+                    ${isActive && "bg-blue-primary"} w-full py-2 px-4 
+                    hover:cursor-pointer flex justify-start gap-3 items-center 
+                    hover:bg-blue-primary hover:shadow-[0px_0px_60px_1px_rgba(0,0,0,0.7)]
+                    `
+                    }
+                >
+                    <PiUsersThree></PiUsersThree>
+                    Participant
+                </NavLink>
+
+                <NavLink
+                    to="/transaction-category"
+                    end
+                    className={({ isActive }) =>
+                        `
+                    ${isActive && "bg-blue-primary"} w-full py-2 px-4 
+                    hover:cursor-pointer flex justify-start gap-3 items-center 
+                    hover:bg-blue-primary hover:shadow-[0px_0px_60px_1px_rgba(0,0,0,0.7)]
+                    `
+                    }
+                >
+                    <MdOutlineCategory></MdOutlineCategory>
+                    Transaction Category
                 </NavLink>
             </nav>
         </aside>

@@ -1,5 +1,6 @@
 import type { IBank } from "./Bank"
 import type { ICurrency } from "./Currency";
+import type { ILedger } from "./Ledger";
 
 export interface IFinancialAccount {
     id: number;
@@ -24,6 +25,11 @@ export interface IFinancialAccountBreakdown {
   cash_out_per_tag: Record<string, number>;
 }
 
+export interface IFinancialAccountInsight {
+    summary: IFinancialAccountSummary;
+    breakdown: IFinancialAccountBreakdown;
+}
+
 export interface IFinancialAccountRes {
     id: number;
     bank: IBank;
@@ -36,4 +42,10 @@ export interface IFinancialAccountRes {
     created_at: number;
     updated_at: number;
     deleted_at?: number;
+}
+
+export interface IFinancialAccountDetail {
+    financial_account: IFinancialAccount;
+    ledgers: ILedger[];
+    insight: IFinancialAccountInsight;
 }

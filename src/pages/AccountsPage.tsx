@@ -92,7 +92,10 @@ const AccountsPage = (): React.ReactElement => {
                                                     <p className="text-xs text-white/50">Balance</p>
                                                     <p className="font-semibold uppercase">
                                                         {account.currency.name}{" "}
-                                                        {account.balance.toLocaleString()}
+                                                        {Number(account.balance).toLocaleString("en-US", {
+                                                            minimumFractionDigits: 2,
+                                                            maximumFractionDigits: 2,
+                                                        })}
                                                     </p>
                                                 </div>
 

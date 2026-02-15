@@ -85,25 +85,42 @@ const BalancePage = (): React.ReactElement => {
 
     return (
         <>
-            <div
-                className='h-[calc(100vh-64px)] w-full bg-neutral-primary'
+
+            <section
+                className='
+                    h-[calc(100vh-116px)] w-full bg-neutral-primary
+                '
             >
-                {
-                    pieData && <Pie
-                        data={{
-                            labels: pieData?.labels,
-                            datasets: [
-                                {
-                                    data: pieData?.data,
-                                    backgroundColor: colors.base,
-                                    hoverBackgroundColor: colors.hover,
-                                },
-                            ],
-                        }}
-                        options={options}
-                    />
-                }
-            </div>
+                <div
+                    className='py-4 px-8 flex flex-col gap-4 w-full h-full'
+                >
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-3xl font-semibold text-neutral-dark">
+                            Balance
+                        </h2>
+
+                    </div>
+                    <div
+                        className='h-[calc(100vh-116px)] w-full bg-neutral-primary'
+                    >
+                        {
+                            pieData && <Pie
+                                data={{
+                                    labels: pieData?.labels,
+                                    datasets: [
+                                        {
+                                            data: pieData?.data,
+                                            backgroundColor: colors.base,
+                                            hoverBackgroundColor: colors.hover,
+                                        },
+                                    ],
+                                }}
+                                options={options}
+                            />
+                        }
+                    </div>
+                </div>
+            </section>
         </>
     )
 }

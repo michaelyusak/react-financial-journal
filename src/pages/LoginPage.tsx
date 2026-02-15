@@ -3,8 +3,9 @@ import React, { useState } from "react";
 import { useToast } from "../contexts/ToastContext";
 import { useNavigate } from "react-router-dom";
 import Form from "../components/Form";
-import { Login } from "../utils/API";
+import { Login, ValidateAccount } from "../utils/API";
 import type { IInputField } from "../interfaces/InputField";
+import { RoleAdmin } from "../constants/Role";
 
 const LoginPage = (): React.ReactElement => {
     const navigate = useNavigate();
@@ -43,6 +44,14 @@ const LoginPage = (): React.ReactElement => {
         Login(email, password)
             .then(() => {
                 removeToast(loginLoadingToastKey)
+
+                ValidateAccount()
+                    .then((data) => {
+                        if (data.roles.includes(RoleAdmin)) {
+                            navigate("/admin/portal")
+                        }
+                    })
+
                 navigate("/")
             })
             .catch((error: Error) => {
